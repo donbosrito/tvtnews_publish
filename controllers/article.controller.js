@@ -59,7 +59,7 @@ module.exports.postNewArticle = function (req, res) {
 };
 
 module.exports.getArticleInfo = (req, res) => {
-    Promotion.findOne({_id: req.params.articleId}, function (err, article) {
+    Article.findOne({_id: req.params.articleId}, function (err, article) {
         if (err || !article) {
             errorCtrl.sendErrorMessage(res, 404,
                 'Bài này không tồn tại', []);
