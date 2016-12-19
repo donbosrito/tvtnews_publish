@@ -191,7 +191,7 @@ module.exports.updateProfile = (req, res) => {
     }
 
     // Update another user's profile
-    if (req.headers._userId != req.params.userId) {
+    if (req.headers._id != req.params.userId) {
         errorHandler.sendErrorMessage(res, 400, 'Bạn không thể cập nhật profile của người khác được', []);
         return;
     }

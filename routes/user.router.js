@@ -13,14 +13,14 @@ router
 })
 
 // Update profile
-.put('/:_id', (req, res, next) => {
+.put('/:userId', (req, res, next) => {
     authController.authenticate(req, res, next);
 }, (req, res) => {
     userController.updateProfile(req, res);
 })
 
 // Get user info
-.get('/:_id', (req, res, next) => {
+.get('/:userId', (req, res, next) => {
     authController.authenticate(req, res, next);
 }, (req, res) => {
     userController.getUserInfo(req, res);
