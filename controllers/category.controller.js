@@ -53,7 +53,7 @@ module.exports.getAllCategories = (req, res) => {
 //Get all article in category
 module.exports.getAllArticles = (req, res) => {
     Article.find({_category: req.params.categoryId}).skip((req.query.page - 1) * limitPage).limit(limitPage)
-        .populate('_author', 'username nickname avatar').exec(function(err, articles) {
+        .populate('_author _category', 'username nickname avatar name').exec(function(err, articles) {
         if (err || !articles) {
             errorCtrl.sendErrorMessage(res, 404,
                 'Không có bài nào', []);

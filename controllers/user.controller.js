@@ -215,3 +215,24 @@ module.exports.updateProfile = (req, res) => {
         }
     });
 };
+
+module.exports.getAllUsers = (req, res) => {
+    User.find({}, function (err, users) {
+        // Has an error when find user
+        if (err) {
+            errorHandler.sendSystemError(res, err);
+            return;
+        }
+
+        if (!users) {
+            errorHandler.sendErrorMessage(res, 404, 'Tài khoản không tồn tại', []);
+        }
+        else {
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                users: users
+            });
+        }
+    });
+};

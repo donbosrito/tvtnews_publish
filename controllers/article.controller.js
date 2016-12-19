@@ -59,8 +59,7 @@ module.exports.postNewArticle = function (req, res) {
 };
 
 module.exports.getArticleInfo = (req, res) => {
-    Article.findOne({_id: req.params.articleId}).populate('_author _category', 'username nickname avatar name')
-        .exec(function (err, article) {
+    Article.findOne({_id: req.params.articleId}, function (err, article) {
         if (err || !article) {
             errorCtrl.sendErrorMessage(res, 404,
                 'Bài này không tồn tại', []);
@@ -76,24 +75,46 @@ module.exports.getArticleInfo = (req, res) => {
 };
 
 module.exports.getAllArticles = (req, res) => {
-    Article.find({}).skip((req.query.page - 1) * limitPage).limit(limitPage)
-        .populate('_author _category', 'username nickname avatar name').exec(function (err, articles) {
-        if (err || !articles) {
-            errorCtrl.sendErrorMessage(res, 404,
-                'Không có bài nào', []);
-        }
-        else {
-            //Arrange list articles in dateCreated order
-            articles.sort(function (a, b) {
-                return (a.dateCreated < b.dateCreated) ? -1 : 1;
-            });
-            res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                articles: articles
-            });
-        }
-    });
+    if (req.query.tag == null || req.query.tag == "") {
+        Article.find({}).skip((req.query.page - 1) * limitPage).limit(limitPage)
+            .populate('_author _category', 'username nickname avatar name').exec(function (err, articles) {
+            if (err || !articles) {
+                errorCtrl.sendErrorMessage(res, 404,
+                    'Không có bài nào', []);
+            }
+            else {
+                //Arrange list articles in dateCreated order
+                articles.sort(function (a, b) {
+                    return (a.dateCreated < b.dateCreated) ? -1 : 1;
+                });
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage,
+                    articles: articles
+                });
+            }
+        });
+    }
+    else {
+        Article.find({ tags: req.query.tag}).skip((req.query.page - 1) * limitPage).limit(limitPage)
+            .populate('_author _category', 'username nickname avatar name').exec(function (err, articles) {
+            if (err || !articles) {
+                errorCtrl.sendErrorMessage(res, 404,
+                    'Không có bài nào', []);
+            }
+            else {
+                //Arrange list articles in dateCreated order
+                articles.sort(function (a, b) {
+                    return (a.dateCreated < b.dateCreated) ? -1 : 1;
+                });
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage,
+                    articles: articles
+                });
+            }
+        });
+    }
 };
 
 function isValidArticle(article) {

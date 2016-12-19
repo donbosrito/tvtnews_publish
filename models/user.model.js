@@ -98,16 +98,16 @@ userSchema.methods.authenticate = function (password) {
 
 // Transform user to JSON
 userSchema.methods.toJSON = function () {
-    let user = this.toObject();
-    delete user.password;
-    delete  user.salt;
+    let user = this.toJSONPrivate();
+    delete  user.accessToken;
     return user;
 };
 
 // Transform user to JSON for public profile
-userSchema.methods.toJSONPublicProfile = function () {
-    let user = this.toJSON();
-    delete  user.accessToken;
+userSchema.methods.toJSONPrivate = function () {
+    let user = this.toObject();
+    delete user.password;
+    delete  user.salt;
     return user;
 };
 

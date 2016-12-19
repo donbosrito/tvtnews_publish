@@ -56,11 +56,7 @@ var articleSchema = new mongoose.Schema({
         default: getCurrentDate()
     },
 
-    tags: [
-        {
-            name: String
-        }
-    ]
+    tags: [String]
 });
 
 function getCurrentDate() {
