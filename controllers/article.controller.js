@@ -59,7 +59,8 @@ module.exports.postNewArticle = function (req, res) {
 };
 
 module.exports.getArticleInfo = (req, res) => {
-    Article.findOne({_id: req.params.articleId}, function (err, article) {
+    Article.findOne({_id: req.params.articleId}).populate('_author _category', 'username nickname avatar name')
+        .exec(function (err, article) {
         if (err || !article) {
             errorCtrl.sendErrorMessage(res, 404,
                 'Bài này không tồn tại', []);
