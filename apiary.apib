@@ -42,14 +42,14 @@ TVTNews API là RESTFul webservice để người dùng kết nối đến cơ s
 
 # Group USER API
 
-## Sign up [/users]
+## Sign up [/api/v1/users]
 
 - Đăng kí tài khoản mới
 - Lấy tất cả user có trong hệ thống
 
 ### Sign up  [POST]
 
-+ Request (application/json)
++ Request
 
         {
             "username": "nguyenthithanhvan",    //require
@@ -63,7 +63,7 @@ TVTNews API là RESTFul webservice để người dùng kết nối đến cơ s
             "typeAccount": "tvtnews",   //require
         }
         
-+ Response 200 (application/json)
++ Response 200
 
         {
             "success": true,
@@ -109,7 +109,7 @@ TVTNews API là RESTFul webservice để người dùng kết nối đến cơ s
         + Query:
                 page: ... //Trang hiện hành, mỗi trang tương ứng 15 users
 
-+ Response 200 (application/json)
++ Response 200
 
         {
             "success": true,
@@ -140,21 +140,21 @@ TVTNews API là RESTFul webservice để người dùng kết nối đến cơ s
             "errorMessage": []
         }
 
-## Sign In [/users/sign-in]
+## Sign In [/api/v1/users/sign-in]
 
 - Đăng nhập vào hệ thống
 - Khi sign in vào, hệ thống sẽ generate mã access_token mới và gửi về cho user.
 
 ### sign in [POST]
 
-+ Request (application/json)
++ Request
 
         {
             "username": "String", // require
             "password": "String" // require
         }
 
-+ Response 201 (application/json)
++ Response 201
 
         {
             "success": true,
@@ -192,14 +192,14 @@ TVTNews API là RESTFul webservice để người dùng kết nối đến cơ s
             "errorMessage": []
         }
 
-## Get user info, update info [/users/:userId]
+## Get user info, update info [/api/v1/users/:userId]
 
 - Lấy thông tin cá nhân
 - Chỉnh sửa thông tin cá nhân
 
 ### Get user info [GET]
 - Lưu ý: Get user info bắt buộc xác thực thông tin
-+ Response 200 (application/json)
++ Response 200
 
         {
             "success": true,
@@ -237,7 +237,7 @@ TVTNews API là RESTFul webservice để người dùng kết nối đến cơ s
             "gender" : "Nữ"
         }
 
-+ Response 200 (application/json)
++ Response 200
 
         {
             "success": true,
@@ -268,7 +268,7 @@ TVTNews API là RESTFul webservice để người dùng kết nối đến cơ s
         
 # Group ARTICLE API
 
-## Create new article, get all articles [/articles]
+## Create new article, get all articles [/api/v1/articles]
 
 ### Get all articles [GET]
 
@@ -346,7 +346,7 @@ TVTNews API là RESTFul webservice để người dùng kết nối đến cơ s
             "message": "Vui lòng điền đầy đủ thông tin!"
         }
         
-## Get article info [/articles/:articleId]
+## Get article info [/api/v1/articles/:articleId]
 
 ### Get article info [GET]
 
@@ -380,7 +380,7 @@ TVTNews API là RESTFul webservice để người dùng kết nối đến cơ s
             "errorMessage": []
         }
         
-## Comment article [/articles/:articleId/comments]
+## Comment article [/api/v1/articles/:articleId/comments]
 
 ### Post comment [POST]
 - Lưu ý: Post comment bắt buộc xác thực người dùng
@@ -447,7 +447,7 @@ TVTNews API là RESTFul webservice để người dùng kết nối đến cơ s
 
 # Group CATEGORY API
 
-## Get list articles by category [/categories/:categoryId/articles]
+## Get list articles by category [/api/v1/categories/:categoryId/articles]
 
 ### Get list articles by category [GET]
 
@@ -498,8 +498,8 @@ TVTNews API là RESTFul webservice để người dùng kết nối đến cơ s
             "resultMessage": "Không có bài nào",
             "errorMessage": []
         }     
-        
-## Get list categories [/categories]
+       
+## Get list categories [/api/v1/categories]
 
 ### Get list categories [GET]
 
