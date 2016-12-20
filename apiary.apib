@@ -1,0 +1,526 @@
+FORMAT: 1A
+HOST: http://polls.apiblueprint.org/
+
+# TVTNEWS API
+
+TVTNews API là RESTFul webservice để người dùng kết nối đến cơ sở dữ liệu bằng Json
+
+# Group AUTHENTICATION
+
+- Mỗi user đều có một biến accessToken
+- Khi gửi lên server một request mà phải cần xác thực thông tin, cần phải đưa vào headers:
+
+    + Headers
+
+            access_token: ..... //require
+            _id: ....   //require
+            
+- Các lỗi chưa xác thực
+    + Response 401
+    
+            {
+                "success": false,
+                "resultMessage": "Thông tin xác thực không chính xác",
+                "errorMessage": []
+            }
+            {
+                "success": false,
+                "resultMessage": "Access token hết hạn hoặc không chính xác!",
+                "errorMessage": []
+            }
+            {
+                "success": false,
+                "resultMessage": "Không thể xác thực người dùng. Vui lòng thử lại!',
+                "errorMessage": []
+            }
+            {
+                "success": false,
+                "resultMessage": "Không thể xác thực người dùng. Thiếu thông tin xác thực',
+                "errorMessage": []
+            }
+            
+
+# Group USER API
+
+## Sign up [/users]
+
+- Đăng kí tài khoản mới
+- Lấy tất cả user có trong hệ thống
+
+### Sign up  [POST]
+
++ Request (application/json)
+
+        {
+            "username": "nguyenthithanhvan",    //require
+            "password": "nguyenthithanhvan",    //require
+            "gender": "Nam",
+            "birthday": 804902400,
+            "nickname": "Vân Tomboy",
+            "fullname": "Nguyễn Thị Thanh Vân",
+            "email": "nguyenthithanhvan@gmail.com",
+            "typeMember": "USER",   //require
+            "typeAccount": "tvtnews",   //require
+        }
+        
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "resultMessage": "Thực hiện thành công",
+            "user": {
+                "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODU4YTA4NmFhNDI1ZTA2ZmUwM2M1NzYiLCJ1c2VybmFtZSI6Im5ndXllbnRoaXRoYW5odmFuIiwiaWF0IjoxNDgyMjAzMjcwLCJleHAiOjE0OTA4NDMyNzB9.O-p39ksYCqgHbpwRLoDZfNfq_ytE_Uor9LQweP8mYO8",
+                "__v": 0,
+                "username": "nguyenthithanhvan",
+                "gender": "Nam",
+                "email": "nguyenthithanhvan@gmail.com",
+                "typeAccount": "tvtnews",
+                "_id": "5858a086aa425e06fe03c576",
+                "articleCount": 0,
+                "typeMember": "USER",
+                "fullname": "Nguyễn Thị Thanh Vân",
+                "nickname": "Vân Tomboy",
+                "birthday": 804902400,
+                "avatar": "http://tinyurl.com/hjcj8ws"
+            }
+        }
+        
++ Response 400
+
+        {
+            "success": false,
+            "resultMessage": "Bạn chưa điền số tên tài khoản hoặc mật khẩu",
+            "errorMessage": []
+        }
+        
++ Response 409
+
+        {
+            "success": false,
+            "resultMessage": "Tài khoảng này đã được đăng ký. Vui lòng đăng nhập hoặc tạo tài khoản bằng tên tài khoản khác",
+            "errorMessage": []
+        }
+
+
+### Get All User [GET]
+
++ Request
+
+        + Query:
+                page: ... //Trang hiện hành, mỗi trang tương ứng 15 users
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "resultMessage": "Thực hiện thành công",
+            "users": [
+                {
+                  "_id": "585774b2c7fc2c0b568e41d3",
+                  "username": "donbosrito",
+                  "gender": "Nam",
+                  "email": "lebangtu95@gmail.com",
+                  "typeAccount": "tvtnews",
+                  "__v": 0,
+                  "articleCount": 2,
+                  "typeMember": "ADMIN",
+                  "fullname": "Lê Băng Tú",
+                  "nickname": "Tú Nhỏ",
+                  "birthday": 804902400,
+                  "avatar": "http://tinyurl.com/hjcj8ws"
+                }
+            ]
+        }
+
++ Response 404
+
+        {
+            "success": false,
+            "resultMessage": "Không có tài khoản nào trong hệ thống",
+            "errorMessage": []
+        }
+
+## Sign In [/users/sign-in]
+
+- Đăng nhập vào hệ thống
+- Khi sign in vào, hệ thống sẽ generate mã access_token mới và gửi về cho user.
+
+### sign in [POST]
+
++ Request (application/json)
+
+        {
+            "username": "String", // require
+            "password": "String" // require
+        }
+
++ Response 201 (application/json)
+
+        {
+            "success": true,
+            "resultMessage": "Thực hiện thành công",
+            "user": {
+                "_id": "585774b2c7fc2c0b568e41d3",
+                "username": "donbosrito",
+                "gender": "Nam",
+                "email": "lebangtu95@gmail.com",
+                "typeAccount": "tvtnews",
+                "__v": 0,
+                "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODU3NzRiMmM3ZmMyYzBiNTY4ZTQxZDMiLCJ1c2VybmFtZSI6ImRvbmJvc3JpdG8iLCJpYXQiOjE0ODIyMDQ0NzEsImV4cCI6MTQ5MDg0NDQ3MX0.4xk-O9FulgZzLL6FmjRxsPqNDhL40mn1MwqfYZaXB3g",
+                "articleCount": 2,
+                "typeMember": "ADMIN",
+                "fullname": "Lê Băng Tú",
+                "nickname": "Tú Nhỏ",
+                "birthday": 804902400,
+                "avatar": "http://tinyurl.com/hjcj8ws"
+            }
+        }
+        
++ Response 400
+
+        {
+            "success": false,
+            "resultMessage": "Bạn chưa điền tên tài khoản hoặc mật khẩu",
+            "errorMessage": []
+        }
+        
++ Response 401
+
+        {
+            "success": false,
+            "resultMessage": "Tài khoản này không tồn tại",
+            "errorMessage": []
+        }
+
+## Get user info, update info [/users/:userId]
+
+- Lấy thông tin cá nhân
+- Chỉnh sửa thông tin cá nhân
+
+### Get user info [GET]
+- Lưu ý: Get user info bắt buộc xác thực thông tin
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "resultMessage": "Thực hiện thành công",
+            "user": {
+                "_id": "58578a9816ae00001128bb84",
+                "username": "lequangtuan",
+                "gender": "Nam",
+                "email": "lequangtuan@gmail.com",
+                "typeAccount": "tvtnews",
+                "__v": 0,
+                "accessToken": ...,
+                "articleCount": 0,
+                "typeMember": "AUTHOR",
+                "fullname": "Lê Quang Tuấn",
+                "nickname": "Quang Tuấn",
+                "birthday": 804902400,
+                "avatar": "http://tinyurl.com/hjcj8ws"
+            }
+        }
+        
++ Response 404
+
+        {
+            "success": false,
+            "resultMessage": "Người dùng này không tồn tại",
+            "errorMessage": []
+        }
+        
+### Update info [PUT]
+- Lưu ý: Update bắt buộc xác thực thông tin
++ Request
+
+        {
+            "gender" : "Nữ"
+        }
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "resultMessage": "Thực hiện thành công",
+            "user": {
+                "_id": "5858a086aa425e06fe03c576",
+                "username": "nguyenthithanhvan",
+                "gender": "Nam",
+                "email": "nguyenthithanhvan@gmail.com",
+                "typeAccount": "tvtnews",
+                "__v": 0,
+                "articleCount": 0,
+                "typeMember": "USER",
+                "fullname": "Nguyễn Thị Thanh Vân",
+                "nickname": "Vân Tomboy",
+                "birthday": 804902400,
+                "avatar": "http://tinyurl.com/hjcj8ws"
+            }
+        }
+        
++ Response 400
+
+        {
+            "success": false,
+            "resultMessage": "Bạn không thể cập nhật profile của người khác được",
+            "errorMessage": []
+        }
+        
+# Group ARTICLE API
+
+## Create new article, get all articles [/articles]
+
+### Get all articles [GET]
+
++ Request
+
+        + Query:
+                page: ... //Trang hiện hành, mỗi trang tương ứng 15 bài post
+                tag:... //Lấy các bài báo có liên quan
+
++ Response 200
+
+        {
+            "success": true,
+            "resultMessage": "Thực hiện thành công",
+            "articles": [
+                {
+                    "_id": "585775a4eef7ec0beeae847e",
+                    "_author": {
+                        "_id": "585774b2c7fc2c0b568e41d3",
+                        "username": "donbosrito",
+                        "nickname": "Tú Nhỏ",
+                        "avatar": "http://tinyurl.com/hjcj8ws"
+                    },
+                    "_category": {
+                        "_id": "58576d60537e04096ea229d2",
+                        "name": "Musik"
+                    },
+                    "title": ...,
+                    "summary": ...,
+                    "body": ...,
+                    "__v": 0,
+                    "tags": [...],
+                    "dateCreated": 1482126753,
+                    "commentCount": 1,
+                    "shareCount": 1,
+                    "readCount": 2,
+                    "poster": "http://tinyurl.com/gpndwtt"
+                },
+            ]
+        }
+
++ Response 404
+
+        {
+            "success": false,
+            "resultMessage": "Không có bài nào",
+            "errorMessage": []
+        }
+
+### Create new article [POST]
+- Lưu ý: Create new article bắt buộc xác thực thông tin
+
++ Request
+
+        {
+            "_author": "585774b2c7fc2c0b568e41d3",  //require
+            "_category" : "58576cd7ac2e13094e5b4fad",   //require
+            "title": ...,   //require
+            "summary": ...,
+            "body": ...,    //require
+            "tags" : [...] 
+        }
+
++ Response 200
+
+        {
+            "success": true,
+            "resultMessage": "Thực hiện thành công"
+        }
+        
++ Response 400
+
+        {
+            "success": false,
+            "message": "Vui lòng điền đầy đủ thông tin!"
+        }
+        
+## Get article info [/articles/:articleId]
+
+### Get article info [GET]
+
++ Response 200
+
+        {
+            "success": true,
+            "resultMessage": "Thực hiện thành công",
+            "article": {
+                "_id": "585775a4eef7ec0beeae847e",
+                "_author": "585774b2c7fc2c0b568e41d3",
+                "_category": "58576d60537e04096ea229d2",
+                "title": ...,
+                "summary": ...,
+                "body": ...,
+                "__v": 0,
+                "tags": [...],
+                "dateCreated": 1482126753,
+                "commentCount": 1,
+                "shareCount": 1,
+                "readCount": 2,
+                "poster": "http://tinyurl.com/gpndwtt"
+            }
+        }
+        
++ Response 404
+
+        {
+            "success": false,
+            "resultMessage": "Bài báo này không tồn tại",
+            "errorMessage": []
+        }
+        
+## Comment article [/articles/:articleId/comments]
+
+### Post comment [POST]
+- Lưu ý: Post comment bắt buộc xác thực người dùng
++ Request
+
+        {
+            "_user": "585774b2c7fc2c0b568e41d3",    //require
+            "_article": "585775a4eef7ec0beeae847e", /require
+            "message": ...  //require
+        }
+
++ Response 200
+
+        {
+            "success": true,
+            "resultMessage": "Thực hiện thành công",
+            "commentCount": 2
+        }
+        
++ Response 404
+
+        {
+            "success": false,
+            "resultMessage": "Bài post này không tồn tại",
+            "errorMessage": []
+        }
+
+### Get all comments [GET]
+
++ Request
+
+        + Query:
+                page: ... //Trang hiện hành, mỗi trang tương ứng 15 comments
+
++ Response 200 
+
+        {
+            "success": true,
+            "resultMessage": "Thực hiện thành công",
+            "comments": [
+                {
+                    "_id": "5858bbbb68c3b407c88c2083",
+                    "_user": {
+                        "_id": "585774b2c7fc2c0b568e41d3",
+                        "username": "donbosrito",
+                        "nickname": "Tú Nhỏ",
+                        "avatar": "http://tinyurl.com/hjcj8ws"
+                    },
+                    "_article": "585775a4eef7ec0beeae847e",
+                    "message": ...,
+                    "__v": 0,
+                    "dateCommented": 1482210235
+                }
+            ]
+        }
+        
++ Response 404
+
+        {
+            "success": false,
+            "resultMessage": "Bài báo này không tồn tại",
+            "errorMessage": []
+        }
+
+# Group CATEGORY API
+
+## Get list articles by category [/categories/:categoryId/articles]
+
+### Get list articles by category [GET]
+
+
++ Request
+
+        + Query:
+                page: ... //Trang hiện hành, mỗi trang tương ứng 15 comments
+                
++ Response 200
+
+        {
+            "success": true,
+            "resultMessage": "Thực hiện thành công",
+            "articles": [
+                {
+                    "_id": "585775a4eef7ec0beeae847e",
+                    "_author": {
+                        "_id": "585774b2c7fc2c0b568e41d3",
+                        "username": "donbosrito",
+                        "nickname": "Tú Nhỏ",
+                        "avatar": "http://tinyurl.com/hjcj8ws"
+                    },
+                    "_category": {
+                        "_id": "58576d60537e04096ea229d2",
+                        "name": ...
+                    },
+                    "title": ...,
+                    "summary": ...,
+                    "body": ...,
+                    "shareCount": 1,
+                    "readCount": 2,
+                    "__v": 0,
+                    "tags": [...],
+                    "dateCreated": 1482126753,
+                    "commentCount": 2,
+                    "sharingCount": 0,
+                    "readingCount": 0,
+                    "poster": "http://tinyurl.com/gpndwtt"
+                }
+            ]
+        }
+       
++ Response 404       
+
+        {
+            "success": false,
+            "resultMessage": "Không có bài nào",
+            "errorMessage": []
+        }     
+        
+## Get list categories [/categories]
+
+### Get list categories [GET]
+
++ Response 200
+
+        {
+            "success": true,
+            "resultMessage": "Thực hiện thành công",
+            "categories": [
+                {
+                    "_id": "58576cd7ac2e13094e5b4fad",
+                    "name": "Star",
+                    "__v": 0
+                }
+            ]
+        }
+
++ Response 404       
+
+        {
+            "success": false,
+            "resultMessage": "Không có bài nào",
+            "errorMessage": []
+        }
