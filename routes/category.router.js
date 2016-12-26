@@ -3,15 +3,15 @@ var express = require('express'),
     categoryController = require('../controllers/category.controller');
 
 router
-    .post('/', function (req, res) {
+    .post('/', (req, res) => {
         categoryController.postNewCategory(req, res);
     })
 
-    .get('/', function (req, res) {
+    .get('/', (req, res) => {
         categoryController.getAllCategories(req, res);
     })
 
-    .get('/:categoryId/articles', function (req, res) {
+    .get('/:categoryId/articles', (req, res) => {
         categoryController.getAllArticles(req, res);
     });
 module.exports = router;

@@ -38,7 +38,7 @@ module.exports.getAllCategories = (req, res) => {
   Category.find({}, function (err, categories) {
       if (err || !categories) {
           errorCtrl.sendErrorMessage(res, 404,
-              'Không có bài nào', []);
+              'Không có thể loại nào', []);
       }
       else {
           res.status(200).json({

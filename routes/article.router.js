@@ -4,21 +4,38 @@ let express = require('express'),
 let articleController = require('../controllers/article.controller'),
     authController = require('../controllers/authorization.controller.js');
 
-
 router
-    .post('/', function (req, res, next) {
+    .post('/', (req, res, next) => {
         authController.authenticate(req, res, next);
-    }, function (req, res, next) {
+    }, (req, res, next) => {
         // add article here
         articleController.postNewArticle(req, res);
     })
 
-    .get('/:articleId', function (req, res) {
+    .get('/:articleId', (req, res) => {
         articleController.getArticleInfo(req, res);
     })
 
-    .get('/', function (req, res) {
+    .get('/', (req, res) => {
         articleController.getAllArticles(req, res);
+    })
+
+    .post('/:articleId/read-post', (req, res) => {
+        articleController.doWithArticle(req, res, 'read');
+    })
+
+    .post('/:articleId/share-post', (req, res) => {
+        articleController.doWithArticle(req, res, 'share');
+    })
+
+    .post('/:articleId/comments', (req, res, next) => {
+        authController.authenticate(req, res, next)
+    }, (req, res) => {
+        articleController.doWithArticle(req, res, 'comment');
+    })
+
+    .get('/:articleId/comments', (req, res) => {
+       articleController.getAllComments(req, res);
     });
 
 module.exports = router;

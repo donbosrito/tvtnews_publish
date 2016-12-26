@@ -8,6 +8,7 @@ let express = require('express'),
 require('./models/user.model');
 require('./models/category.model');
 require('./models/article.model');
+require('./models/comment.model');
 
 //Define routers
 let user = require('./routes/user.router'),

@@ -8,16 +8,18 @@ let mongoose = require('mongoose'),
 let User = mongoose.model('User');
 
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
-    defaultSuccessMessage = 'Thực hiện thành công';
+    defaultSuccessMessage = 'Thực hiện thành công',
+    limitUser = 15;
 
 // Check user info is valid or invalid
 function isValidUser(user) {
-    if (!user.typeMember || (user.typeMember != 'ADMIN' && user.typeMember != 'USER' && user.typeMember != 'AUTHOR'))
+    if (user.typeMember != 'ADMIN' && user.typeMember != 'USER' && user.typeMember != 'AUTHOR')
         return false;
 
     if (!user.username || !user.password)
         return false;
 
+    delete user.articleCount;
     return true;
 }
 
@@ -33,7 +35,7 @@ function responseUserInfo(res, user, token) {
             res.status(200).json({
                 success: true,
                 resultMessage: defaultSuccessMessage,
-                user: user.toJSON()
+                user: user.toJSONPrivate()
             });
         }
     });
@@ -46,7 +48,7 @@ function responseUserInfo(res, user, token) {
  */
 module.exports.signUp = (req, res) => {
     // Check request data
-    if (!req.body.username || !req.body.password) {
+    if (!isValidUser(req.body)) {
         errorHandler.sendErrorMessage(res, 400,
             'Bạn chưa điền số tên tài khoản hoặc mật khẩu', []);
         return;
@@ -172,7 +174,7 @@ module.exports.getUserInfo = (req, res) => {
             res.status(200).json({
                 success: true,
                 resultMessage: defaultSuccessMessage,
-                user: user.toJSONPublicProfile()
+                user: user.toJSONPrivate()
             });
         }
     });
@@ -184,12 +186,6 @@ module.exports.getUserInfo = (req, res) => {
  * @param res
  */
 module.exports.updateProfile = (req, res) => {
-    // Check request data
-    if (!req.params.userId) {
-        errorHandler.sendErrorMessage(res, 400, 'Không đủ thông tin', []);
-        return;
-    }
-
     // Update another user's profile
     if (req.headers._id != req.params.userId) {
         errorHandler.sendErrorMessage(res, 400, 'Bạn không thể cập nhật profile của người khác được', []);
@@ -203,9 +199,6 @@ module.exports.updateProfile = (req, res) => {
             return;
         }
 
-        if (!user) {
-            errorHandler.sendErrorMessage(res, 404, 'Tài khoản không tồn tại', []);
-        }
         else {
             res.status(200).json({
                 success: true,
@@ -217,7 +210,7 @@ module.exports.updateProfile = (req, res) => {
 };
 
 module.exports.getAllUsers = (req, res) => {
-    User.find({}, function (err, users) {
+    User.find({}).skip((req.query.page - 1) * limitUser).limit(limitUser).exec(function (err, users) {
         // Has an error when find user
         if (err) {
             errorHandler.sendSystemError(res, err);
@@ -225,7 +218,7 @@ module.exports.getAllUsers = (req, res) => {
         }
 
         if (!users) {
-            errorHandler.sendErrorMessage(res, 404, 'Tài khoản không tồn tại', []);
+            errorHandler.sendErrorMessage(res, 404, 'Không có tài khoản nào trong hệ thống', []);
         }
         else {
             res.status(200).json({
@@ -236,3 +229,126 @@ module.exports.getAllUsers = (req, res) => {
         }
     });
 };
+
+module.exports.likeArticle = (req, res) => {
+    let userId = req.params.userId,
+        articleId = req.body._article;
+
+    if (!articleId) {
+        errorHandler.sendErrorMessage(res, 400, 'Thiếu ID bài báo', []);
+        return;
+    }
+
+    User.findOne({_id: userId}, (err, user) => {
+        if (err) {
+            errorHandler.sendSystemError(res, err);
+            return;
+        }
+
+        // User not found
+        if (!user) {
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+            return;
+        }
+
+        // Check like article
+        if (isLiked(articleId, user.likedArticles)) {
+            errorHandler.sendErrorMessage(res, 400, 'Bạn đã like bài báo này rồi', []);
+            return;
+        }
+
+        // Like Article
+        user.likedArticles.push(articleId);
+        user.save((err) => {
+            if (err) {
+                errorHandler.sendSystemError(res, err);
+            } else {
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage
+                });
+            }
+        });
+    });
+};
+
+module.exports.unlikeArticle = (req, res) => {
+    let userId = req.params.userId,
+        articleId = req.body.articleId;
+
+    if (!articleId) {
+        errorHandler.sendErrorMessage(res, 400, 'Thiếu ID bài báo', []);
+        return;
+    }
+
+    User.findOne({_id: userId}, (err, user) => {
+        if (err) {
+            errorHandler.sendSystemError(res, err);
+            return;
+        }
+
+        // User not found
+        if (!user) {
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+            return;
+        }
+
+        // Check like article
+        if (!isPinned(articleId, user.likedArticles)) {
+            errorHandler.sendErrorMessage(res, 400, 'Bạn đang chưa like bài báo này', []);
+            return;
+        }
+
+        // Unlike article
+        for (let i = 0; i < user.likedArticles.length; i++) {
+            if (user.likedArticles[i]._id == articleId) {
+                user.likedArticles.splice(i, 1);
+                break;
+            }
+        }
+
+        user.save((err) => {
+            if (err) {
+                errorHandler.sendSystemError(res, err);
+            } else {
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage
+                });
+            }
+        });
+    });
+};
+
+module.exports.getLikedArticles = (req, res) => {
+    let userId = req.params.userId;
+    let page = req.params.page;
+
+    User.findOne({_id: userId}, (err, user) => {
+        if (err) {
+            errorHandler.sendSystemError(res, err);
+            return;
+        }
+
+        if (!user) {
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+            return;
+        }
+
+        // Get promotion
+        let pinnedPromotions = [];
+        for (let i = 0; i < user.pinnedPromotion.length; i++) {
+            Promotion.findOne({_id: user.pinnedPromotion[i]._promotionId}, (err, promotion) => {
+                pinnedPromotions.push(promotion);
+            });
+        }
+    });
+};
+
+function isLiked(articleId, listArticles) {
+    for (let i = 0; i < listArticles.length; i++) {
+        if (listArticles[i]._id == articleId)
+            return true;
+    }
+    return false;
+}

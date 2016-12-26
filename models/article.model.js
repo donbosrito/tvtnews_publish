@@ -35,12 +35,12 @@ var articleSchema = new mongoose.Schema({
         required: [true, 'Body is required.']
     },
 
-    readingCount: {
+    readCount: {
         type: Number,
         default: 0
     },
 
-    sharingCount: {
+    shareCount: {
         type: Number,
         default: 0
     },
@@ -52,14 +52,14 @@ var articleSchema = new mongoose.Schema({
 
     dateCreated: {
         type: Number,
-        set: getCurrentDate,
-        default: getCurrentDate()
+        set: getCurrentTime,
+        default: getCurrentTime()
     },
 
     tags: [String]
 });
 
-function getCurrentDate() {
+function getCurrentTime() {
     return parseInt(new Date().getTime() / 1000);
 }
 

@@ -27,6 +27,16 @@ let userSchema = new mongoose.Schema({
         default: 0
     },
 
+    likedArticles: [
+        {
+            _article: {
+                type: ObjectId,
+                ref: 'Article',
+                unique: true
+            }
+        }
+    ],
+
     nickname: {
         type: String,
         default: config.user.defaultNickname
