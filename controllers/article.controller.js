@@ -188,30 +188,6 @@ module.exports.doWithArticle = (req, res, action) => {
     })
 };
 
-module.exports.getCountLike = (req, res) => {
-    Article.findOne({_id: req.params.articleId}, function (err, article) {
-        if (err || !article) {
-            errorCtrl.sendErrorMessage(res, 404,
-                'Bài báo này không tồn tại', []);
-        }
-        else {
-            User.count({likedArticles: req.params.articleId}, function (err, count) {
-                if (err) {
-                    errorCtrl.sendErrorMessage(res, 404,
-                        'Có lỗi xảy ra, vui lòng thử lại', []);
-                }
-                else {
-                    res.status(200).json({
-                        success: true,
-                        resultMessage: defaultSuccessMessage,
-                        countLikes: count
-                    });
-                }
-            });
-        }
-    });
-};
-
 module.exports.getAllComments =(req, res) => {
     Article.findOne({_id: req.params.articleId}, function (err, article) {
         if (err || !article) {
@@ -250,5 +226,6 @@ function isValidArticle(article) {
     delete article.readCount;
     delete article.shareCount;
     delete article.commentCount;
+    delete article.likeCount;
     return true;
 }

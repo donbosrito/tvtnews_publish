@@ -40,6 +40,11 @@ var articleSchema = new mongoose.Schema({
         default: 0
     },
 
+    likeCount: {
+        type: Number,
+        default: 0
+    },
+
     shareCount: {
         type: Number,
         default: 0
