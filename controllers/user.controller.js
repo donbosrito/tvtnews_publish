@@ -20,6 +20,7 @@ function isValidUser(user) {
         return false;
 
     delete user.articleCount;
+    delete user.likedArticles;
     return true;
 }
 

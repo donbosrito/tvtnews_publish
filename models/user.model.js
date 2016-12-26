@@ -5,6 +5,9 @@ let mongoose = require('mongoose'),
 
 let config = require('../config/app');
 
+let ObjectId = mongoose.Schema.ObjectId;
+
+
 let userSchema = new mongoose.Schema({
     username: {
         type: String,

@@ -188,6 +188,34 @@ module.exports.doWithArticle = (req, res, action) => {
     })
 };
 
+module.exports.getCountLike = (req, res) => {
+    Article.findOne({_id: req.params.articleId}, function (err, article) {
+        if (err || !article) {
+            errorCtrl.sendErrorMessage(res, 404,
+                'Bài báo này không tồn tại', []);
+        }
+        else {
+            User.find({_article: req.params.articleId}, function (err, likes) {
+                if (err) {
+                    errorCtrl.sendErrorMessage(res, 404,
+                        'Có lỗi xảy ra, vui lòng thử lại', []);
+                }
+                else {
+                    //Arrange list articles in dateCreated order
+                    comments.sort(function (a, b) {
+                        return (a.dateCreated < b.dateCreated) ? -1 : 1;
+                    });
+                    res.status(200).json({
+                        success: true,
+                        resultMessage: defaultSuccessMessage,
+                        likes: likes.size()
+                    });
+                }
+            });
+        }
+    });
+};
+
 module.exports.getAllComments =(req, res) => {
     Article.findOne({_id: req.params.articleId}, function (err, article) {
         if (err || !article) {
@@ -215,7 +243,6 @@ module.exports.getAllComments =(req, res) => {
             });
         }
     });
-
 };
 
 function isValidArticle(article) {
