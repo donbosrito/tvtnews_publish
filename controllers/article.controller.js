@@ -195,20 +195,16 @@ module.exports.getCountLike = (req, res) => {
                 'Bài báo này không tồn tại', []);
         }
         else {
-            User.find({_article: req.params.articleId}, function (err, likes) {
+            User.count({likedArticles: req.params.articleId}, function (err, count) {
                 if (err) {
                     errorCtrl.sendErrorMessage(res, 404,
                         'Có lỗi xảy ra, vui lòng thử lại', []);
                 }
                 else {
-                    //Arrange list articles in dateCreated order
-                    comments.sort(function (a, b) {
-                        return (a.dateCreated < b.dateCreated) ? -1 : 1;
-                    });
                     res.status(200).json({
                         success: true,
                         resultMessage: defaultSuccessMessage,
-                        likes: likes.size()
+                        countLikes: count
                     });
                 }
             });

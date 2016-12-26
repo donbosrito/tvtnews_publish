@@ -43,14 +43,14 @@ router
 
     // Like article
     .post('/:userId/like-article', (req, res, next) => {
-        authController.authenticate(req, rex, next);
+        authController.authenticate(req, res, next);
     }, (req, res) => {
         userController.likeArticle(req, res);
     })
 
     // unlike article
     .delete('/:userId/unlike-article', (req, res, next) => {
-        authController.authenticate(req, rex, next);
+        authController.authenticate(req, res, next);
     }, (req, res) => {
         userController.unlikeArticle(req, res);
     })

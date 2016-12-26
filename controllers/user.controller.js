@@ -275,7 +275,7 @@ module.exports.likeArticle = (req, res) => {
 
 module.exports.unlikeArticle = (req, res) => {
     let userId = req.params.userId,
-        articleId = req.body.articleId;
+        articleId = req.body._article;
 
     if (!articleId) {
         errorHandler.sendErrorMessage(res, 400, 'Thiếu ID bài báo', []);
@@ -295,7 +295,7 @@ module.exports.unlikeArticle = (req, res) => {
         }
 
         // Check like article
-        if (!isPinned(articleId, user.likedArticles)) {
+        if (!isLiked(articleId, user.likedArticles)) {
             errorHandler.sendErrorMessage(res, 400, 'Bạn đang chưa like bài báo này', []);
             return;
         }

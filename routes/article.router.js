@@ -35,7 +35,11 @@ router
     })
 
     .get('/:articleId/comments', (req, res) => {
-       articleController.getAllComments(req, res);
+        articleController.getAllComments(req, res);
+    })
+
+    .get('/:articleId/count-likes', (req, res) => {
+        articleController.getCountLike(req, res);
     });
 
 module.exports = router;
