@@ -96,6 +96,11 @@ module.exports.getAllArticles = (req, res) => {
                     'Không có bài báo nào', []);
             else {
                 Article.count().exec(function (err, count) {
+                    let pages;
+                    if (count % limitPage == 0)
+                        pages = count / limitPage;
+                    else
+                        pages = parseInt((count / limitPage) + 1);
                     //Arrange list articles in dateCreated order
                     articles.sort(function (a, b) {
                         return (a.dateCreated < b.dateCreated) ? -1 : 1;
@@ -104,7 +109,7 @@ module.exports.getAllArticles = (req, res) => {
                         success: true,
                         resultMessage: defaultSuccessMessage,
                         articles: articles,
-                        pages: (count / limitPage) + 1
+                        pages: pages
                     });
                 });
             }
@@ -126,7 +131,12 @@ module.exports.getAllArticles = (req, res) => {
                         'Không có bài báo nào', []);
 
                 else {
-                    Article.count().exec(function (err, count) {
+                    Article.count({$text: {$search: req.query.search}}).exec(function (err, count) {
+                        let pages;
+                        if (count % limitPage == 0)
+                            pages = count / limitPage;
+                        else
+                            pages = parseInt((count / limitPage) + 1);
                         //Arrange list articles in dateCreated order
                         articles.sort(function (a, b) {
                             return (a.dateCreated < b.dateCreated) ? -1 : 1;
@@ -135,7 +145,7 @@ module.exports.getAllArticles = (req, res) => {
                             success: true,
                             resultMessage: defaultSuccessMessage,
                             articles: articles,
-                            pages: (count / limitPage) + 1
+                            pages: pages
                         });
                     });
                 }
@@ -312,6 +322,11 @@ module.exports.getAllComments = (req, res) => {
                 _article: req.params.articleId,
                 _replyFor: undefined
             }).exec(function (err, count) {
+                let pages;
+                if (count % limitComment == 0)
+                    pages = count / limitComment;
+                else
+                    pages = parseInt((count / limitComment) + 1);
                 //Arrange list articles in dateCreated order
                 comments.sort(function (a, b) {
                     return (a.dateCreated < b.dateCreated) ? -1 : 1;
@@ -320,7 +335,7 @@ module.exports.getAllComments = (req, res) => {
                     success: true,
                     resultMessage: defaultSuccessMessage,
                     comments: comments,
-                    pages: (count / limitPage) + 1
+                    pages: pages
                 });
             });
         }
@@ -344,6 +359,11 @@ module.exports.getAllReply = (req, res) => {
                 _article: req.params.articleId,
                 _replyFor: req.params.commentId
             }).exec(function (err, count) {
+                let pages;
+                if (count % limitComment == 0)
+                    pages = count / limitComment;
+                else
+                    pages = parseInt((count / limitComment) + 1);
                 //Arrange list articles in dateCreated order
                 comments.sort(function (a, b) {
                     return (a.dateCreated < b.dateCreated) ? -1 : 1;
@@ -352,7 +372,7 @@ module.exports.getAllReply = (req, res) => {
                     success: true,
                     resultMessage: defaultSuccessMessage,
                     comments: comments,
-                    pages: (count / limitPage) + 1
+                    pages: pages
                 });
             });
         }

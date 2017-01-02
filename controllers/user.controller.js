@@ -225,10 +225,18 @@ module.exports.getAllUsers = (req, res) => {
             errorHandler.sendErrorMessage(res, 404, 'Không có tài khoản nào trong hệ thống', []);
         }
         else {
-            res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                users: users
+            User.count().exec(function (err, count) {
+                let pages;
+                if (count % limitArticle == 0)
+                    pages = count / limitArticle;
+                else
+                    pages = parseInt((count / limitArticle) + 1);
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage,
+                    users: users,
+                    pages: pages
+                });
             });
         }
     });
@@ -268,7 +276,7 @@ module.exports.likeArticle = (req, res) => {
                     'Bài báo này không tồn tại', []);
             }
             else {
-                article.likeCount ++;
+                article.likeCount++;
                 article.save(function (err, updatedArticle) {
                     if (err) {
                         errorCtrl.sendErrorMessage(res, 404,
@@ -281,7 +289,7 @@ module.exports.likeArticle = (req, res) => {
                                 errorHandler.sendSystemError(res, err);
                             } else {
                                 res.status(200).json({
-                                        success: true,
+                                    success: true,
                                     resultMessage: defaultSuccessMessage
                                 });
                             }
@@ -329,7 +337,7 @@ module.exports.unlikeArticle = (req, res) => {
                             'Bài báo này không tồn tại', []);
                     }
                     else {
-                        article.likeCount --;
+                        article.likeCount--;
                         article.save(function (err, updatedArticle) {
                             if (err) {
                                 errorCtrl.sendErrorMessage(res, 404,
@@ -342,7 +350,7 @@ module.exports.unlikeArticle = (req, res) => {
                                         errorHandler.sendSystemError(res, err);
                                     } else {
                                         res.status(200).json({
-                                                success: true,
+                                            success: true,
                                             resultMessage: defaultSuccessMessage
                                         });
                                     }
@@ -359,8 +367,8 @@ module.exports.unlikeArticle = (req, res) => {
 
 module.exports.getLikedArticles = (req, res) => {
     let userId = req.params.userId;
-    User.findOne({_id: userId}).skip((req.query.page - 1) * limitArticle).limit(limitArticle)
-        .populate('likedArticles', 'title summary poster category likeCount readCount commentCount dateCreated').exec(function(err, user) {
+    User.findOne({_id: userId}, {'likedArticles': {$slice: [(req.query.page - 1) * limitArticle, limitArticle]}})
+        .populate('likedArticles', 'title summary poster category likeCount readCount commentCount dateCreated').exec(function (err, user) {
         if (err) {
             errorHandler.sendSystemError(res, err);
             return;
@@ -370,10 +378,18 @@ module.exports.getLikedArticles = (req, res) => {
             errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
             return;
         }
+
+        let count = user.likedArticles.length,
+            pages;
+        if (count % limitArticle == 0)
+            pages = count / limitArticle;
+        else
+            pages = parseInt((count / limitArticle) + 1);
         res.status(200).json({
             success: true,
             resultMessage: defaultSuccessMessage,
-            likedArticles: user.likedArticles
+            likedArticles: user.likedArticles,
+            pages: pages
         });
     });
 };

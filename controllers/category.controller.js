@@ -65,7 +65,12 @@ module.exports.getAllArticles = (req, res) => {
             errorCtrl.sendErrorMessage(res, 404,
                 'Không có bài báo nào', []);
         else {
-            Article.count().exec(function(err, count) {
+            Article.count({_category: req.params.categoryId}).exec(function(err, count) {
+                let pages;
+                if (count % limitPage == 0)
+                    pages = count / limitPage;
+                else
+                    pages = parseInt((count / limitPage) + 1);
                 //Arrange list articles in dateCreated order
                 articles.sort(function (a, b) {
                     return (a.dateCreated < b.dateCreated) ? -1 : 1;
@@ -74,7 +79,7 @@ module.exports.getAllArticles = (req, res) => {
                     success: true,
                     resultMessage: defaultSuccessMessage,
                     articles: articles,
-                    pages: (count / limitPage) + 1
+                    pages: pages
                 });
             });
         }
