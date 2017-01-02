@@ -110,7 +110,7 @@ userSchema.methods.authenticate = function (password) {
 // Transform user to JSON
 userSchema.methods.toJSON = function () {
     let user = this.toJSONPrivate();
-    delete  user.accessToken;
+    delete user.accessToken;
     return user;
 };
 
@@ -118,7 +118,8 @@ userSchema.methods.toJSON = function () {
 userSchema.methods.toJSONPrivate = function () {
     let user = this.toObject();
     delete user.password;
-    delete  user.salt;
+    delete user.salt;
+    delete user.likedArticles;
     return user;
 };
 

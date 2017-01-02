@@ -68,7 +68,7 @@ module.exports.getArticleInfo = (req, res) => {
         .populate('_author _category', 'username nickname avatar name')
         .exec(function (err, article) {
             if (err)
-                errorCtrl.sendErrorMessage(res, 404,
+                errorCtrl.sendErrorMessage(res, 500,
                     defaultErrorMessage, []);
             else if (!article)
                 errorCtrl.sendErrorMessage(res, 404,
@@ -89,7 +89,7 @@ module.exports.getAllArticles = (req, res) => {
         Article.find({}).skip((req.query.page - 1) * limitPage).limit(limitPage)
             .populate('_author _category', 'username nickname avatar name').exec(function (err, articles) {
             if (err)
-                errorCtrl.sendErrorMessage(res, 404,
+                errorCtrl.sendErrorMessage(res, 500,
                     defaultErrorMessage, []);
             else if (!articles)
                 errorCtrl.sendErrorMessage(res, 404,
@@ -103,8 +103,26 @@ module.exports.getAllArticles = (req, res) => {
                         pages = parseInt((count / limitPage) + 1);
                     //Arrange list articles in dateCreated order
                     articles.sort(function (a, b) {
-                        return (a.dateCreated < b.dateCreated) ? -1 : 1;
+                        return (parseInt(a.dateCreated / 604800) < parseInt(b.dateCreated) / 604800) ? 1 : -1;
                     });
+                    if (req.query.action == "trending") {
+                        console.log('trending action');
+                        articles.sort(function (a, b) {
+                            return (a.likeCount < b.likeCount) ? 1 : -1;
+                        });
+                    }
+                    else if (req.query.action == "popular") {
+                        console.log('popular action');
+                        articles.sort(function (a, b) {
+                            return (a.readCount < b.readCount) ? 1 : -1;
+                        });
+                    }
+                    else {
+                        console.log('hot news action');
+                        articles.sort(function (a, b) {
+                            return (a.commentCount < b.commentCount) ? 1 : -1;
+                        });
+                    }
                     res.status(200).json({
                         success: true,
                         resultMessage: defaultSuccessMessage,
@@ -139,7 +157,10 @@ module.exports.getAllArticles = (req, res) => {
                             pages = parseInt((count / limitPage) + 1);
                         //Arrange list articles in dateCreated order
                         articles.sort(function (a, b) {
-                            return (a.dateCreated < b.dateCreated) ? -1 : 1;
+                            return (parseInt(a.dateCreated / 604800) < parseInt(b.dateCreated) / 604800) ? 1 : -1;
+                        });
+                        articles.sort(function (a, b) {
+                            return (a.readCount < b.readCount) ? 1 : -1;
                         });
                         res.status(200).json({
                             success: true,
