@@ -6,7 +6,8 @@ let mongoose = require('mongoose'),
 
 let Article = mongoose.model('Article'),
     User = mongoose.model('User'),
-    Comment = mongoose.model('Comment');
+    Comment = mongoose.model('Comment'),
+    ObjectId = mongoose.Schema.ObjectId;
 
 
 // Define default response message
@@ -220,80 +221,51 @@ module.exports.doWithArticle = (req, res, action) => {
                 case "comment":
                     req.body._user = req.headers._id;
                     req.body._article = req.params.articleId;
-                    if (req.body._replyFor != null && req.body._replyFor != "") {
-                        Comment.find({_id: req.body._replyFor}, (err, comment) => {
-                            if (err) {
-                                errorCtrl.sendErrorMessage(res, 404,
-                                    defaultErrorMessage,
-                                    errorCtrl.getErrorMessage(err));
-                                return;
-                            }
-                            else if (!comment) {
-                                errorCtrl.sendErrorMessage(res, 404,
-                                    'Bình luận này không tồn tại', []);
-                                return;
-                            }
-                            else {
-                                Comment.findOne(comment._replyFor, (err, cmt) => {
-                                    if (err) {
-                                        errorCtrl.sendErrorMessage(res, 404,
-                                            defaultErrorMessage,
-                                            errorCtrl.getErrorMessage(err));
-                                        return;
-                                    }
-                                    else if (cmt)
-                                        req.body._replyFor = cmt._id;
-
-                                    Comment.create(req.body, function (err) {
-                                        if (err) {
-                                            errorCtrl.sendErrorMessage(res, 404,
-                                                defaultErrorMessage,
-                                                errorCtrl.getErrorMessage(err));
-                                        } else {
-                                            article.commentCount++;
-                                            article.save(function (err) {
-                                                if (err) {
-                                                    errorCtrl.sendErrorMessage(res, 404,
-                                                        defaultErrorMessage,
-                                                        errorCtrl.getErrorMessage(err));
-                                                } else {
-                                                    res.status(200).json({
-                                                        success: true,
-                                                        resultMessage: defaultSuccessMessage,
-                                                        commentCount: article.commentCount
-                                                    });
-                                                }
-                                            });
-                                        }
-                                    });
-                                });
-                            }
-                        });
-                    }
-                    else {
-                        Comment.create(req.body, function (err) {
-                            if (err) {
-                                errorCtrl.sendErrorMessage(res, 404,
-                                    defaultErrorMessage,
-                                    errorCtrl.getErrorMessage(err));
-                            } else {
-                                article.commentCount++;
-                                article.save(function (err) {
-                                    if (err) {
-                                        errorCtrl.sendErrorMessage(res, 404,
-                                            defaultErrorMessage,
-                                            errorCtrl.getErrorMessage(err));
-                                    } else {
-                                        res.status(200).json({
-                                            success: true,
-                                            resultMessage: defaultSuccessMessage,
-                                            commentCount: article.commentCount
+                    delete req.body._reply;
+                    Comment.create(req.body, function (err, reply) {
+                        if (err) {
+                            errorCtrl.sendErrorMessage(res, 500,
+                                defaultErrorMessage,
+                                errorCtrl.getErrorMessage(err));
+                        } else {
+                            article.commentCount++;
+                            article.save(function (err) {
+                                if (err) {
+                                    errorCtrl.sendErrorMessage(res, 404,
+                                        defaultErrorMessage,
+                                        errorCtrl.getErrorMessage(err));
+                                } else {
+                                    if (req.body.replyFor != undefined && req.body.replyFor != "") {
+                                        Comment.findOneAndUpdate({_id: req.body.replyFor}, {
+                                            $push: {
+                                                _reply: reply
+                                            }
+                                        }, {safe: true, upsert: true}, (err, comment) => {
+                                            if (err) {
+                                                errorCtrl.sendErrorMessage(res, 500,
+                                                    defaultErrorMessage,
+                                                    errorCtrl.getErrorMessage(err));
+                                                return;
+                                            }
+                                            else if (!comment) {
+                                                errorCtrl.sendErrorMessage(res, 404,
+                                                    "Bình luận này không tồn tại",
+                                                    errorCtrl.getErrorMessage(err));
+                                                return;
+                                            }
+                                            else {
+                                                res.status(200).json({
+                                                    success: true,
+                                                    resultMessage: defaultSuccessMessage,
+                                                    commentCount: article.commentCount
+                                                });
+                                            }
                                         });
                                     }
-                                });
-                            }
-                        });
-                    }
+                                }
+                            });
+                        }
+                    });
                     break;
             }
         }
@@ -327,11 +299,9 @@ module.exports.getCountLike = (req, res) => {
 };
 
 module.exports.getAllComments = (req, res) => {
-    Comment.find({
-        _article: req.params.articleId,
-        _replyFor: undefined,
-    }).skip((req.query.page - 1) * limitComment).limit(limitComment)
-        .populate('_user', 'username nickname avatar name').exec(function (err, comments) {
+    Comment.find({_article: req.params.articleId,}).skip((req.query.page - 1) * limitComment).limit(limitComment)
+        .populate('_user', 'username nickname avatar name')
+        .populate('_reply').exec(function (err, comments) {
         if (err)
             errorCtrl.sendErrorMessage(res, 404,
                 defaultErrorMessage, []);
@@ -339,63 +309,33 @@ module.exports.getAllComments = (req, res) => {
             errorCtrl.sendErrorMessage(res, 404,
                 'Không có bình luận nào', []);
         else {
-            Comment.count({
-                _article: req.params.articleId,
-                _replyFor: undefined
-            }).exec(function (err, count) {
-                let pages;
-                if (count % limitComment == 0)
-                    pages = count / limitComment;
-                else
-                    pages = parseInt((count / limitComment) + 1);
-                //Arrange list articles in dateCreated order
-                comments.sort(function (a, b) {
-                    return (a.dateCreated < b.dateCreated) ? -1 : 1;
-                });
-                res.status(200).json({
-                    success: true,
-                    resultMessage: defaultSuccessMessage,
-                    comments: comments,
-                    pages: pages
+            Comment.populate(comments._reply, {
+                path: '_user',
+                select: 'username nickname avatar name'
+            }, (err, reply) => {
+                comments._reply = reply;
+                Comment.count({
+                    _article: req.params.articleId,
+                    _replyFor: undefined
+                }).exec(function (err, count) {
+                    let pages;
+                    if (count % limitComment == 0)
+                        pages = count / limitComment;
+                    else
+                        pages = parseInt((count / limitComment) + 1);
+                    //Arrange list articles in dateCreated order
+                    comments.sort(function (a, b) {
+                        return (a.dateCommented < b.dateCommented) ? -1 : 1;
+                    });
+                    res.status(200).json({
+                        success: true,
+                        resultMessage: defaultSuccessMessage,
+                        comments: comments,
+                        pages: pages
+                    });
                 });
             });
-        }
-    });
-};
 
-module.exports.getAllReply = (req, res) => {
-    Comment.find({
-        _article: req.params.articleId,
-        _replyFor: req.params.commentId
-    }).skip((req.query.page - 1) * limitComment).limit(limitComment)
-        .populate('_user', 'username nickname avatar name').exec(function (err, comments) {
-        if (err)
-            errorCtrl.sendErrorMessage(res, 404,
-                defaultErrorMessage, []);
-        else if (!comments)
-            errorCtrl.sendErrorMessage(res, 404,
-                'Không có bình luận nào', []);
-        else {
-            Comment.count({
-                _article: req.params.articleId,
-                _replyFor: req.params.commentId
-            }).exec(function (err, count) {
-                let pages;
-                if (count % limitComment == 0)
-                    pages = count / limitComment;
-                else
-                    pages = parseInt((count / limitComment) + 1);
-                //Arrange list articles in dateCreated order
-                comments.sort(function (a, b) {
-                    return (a.dateCreated < b.dateCreated) ? -1 : 1;
-                });
-                res.status(200).json({
-                    success: true,
-                    resultMessage: defaultSuccessMessage,
-                    comments: comments,
-                    pages: pages
-                });
-            });
         }
     });
 };

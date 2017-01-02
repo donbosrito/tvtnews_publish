@@ -27,10 +27,12 @@ let commentSchema = new mongoose.Schema({
         required: [true, 'Message have not body']
     },
 
-    _replyFor: {
-        type: ObjectId,
-        ref: 'Comment',
-    }
+    _reply: [
+        {
+            type: ObjectId,
+            ref: 'Comment',
+        }
+    ]
 });
 
 function getCurrentTime() {
