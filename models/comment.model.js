@@ -29,8 +29,20 @@ let commentSchema = new mongoose.Schema({
 
     _reply: [
         {
-            type: ObjectId,
-            ref: 'Comment',
+            _user: {
+                type: ObjectId,
+                ref: 'User',
+                required: [true, 'User id is required']
+            },
+            dateCommented: {
+                type: Number,
+                set: getCurrentTime,
+                default: getCurrentTime,
+            },
+            message: {
+                type: String,
+                required: [true, 'Message have not body']
+            },
         }
     ]
 });
