@@ -32,11 +32,9 @@ let userSchema = new mongoose.Schema({
 
     likedArticles: [
         {
-            _article: {
-                type: ObjectId,
-                ref: 'Article',
-                unique: true
-            }
+            type: ObjectId,
+            ref: 'Article',
+            unique: true
         }
     ],
 

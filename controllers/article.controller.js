@@ -8,6 +8,7 @@ let Article = mongoose.model('Article'),
     User = mongoose.model('User'),
     Comment = mongoose.model('Comment');
 
+
 // Define default response message
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     defaultSuccessMessage = 'Thực hiện thành công',
@@ -65,61 +66,80 @@ module.exports.postNewArticle = function (req, res) {
 module.exports.getArticleInfo = (req, res) => {
     Article.findOne({_id: req.params.articleId})
         .populate('_author _category', 'username nickname avatar name')
-        .exec(function (err, article){
-        if (err || !article) {
-            errorCtrl.sendErrorMessage(res, 404,
-                'Bài báo này không tồn tại', []);
-        }
-        else {
-            res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                article: article
-            });
-        }
-    });
-};
-
-module.exports.getAllArticles = (req, res) => {
-    if (req.query.tag == null || req.query.tag == "") {
-        Article.find({}).skip((req.query.page - 1) * limitPage).limit(limitPage)
-            .populate('_author _category', 'username nickname avatar name').exec(function (err, articles) {
-            if (err || !articles) {
+        .exec(function (err, article) {
+            if (err)
                 errorCtrl.sendErrorMessage(res, 404,
-                    'Không có bài nào', []);
-            }
+                    defaultErrorMessage, []);
+            else if (!article)
+                errorCtrl.sendErrorMessage(res, 404,
+                    'Bài post này không tồn tại', []);
             else {
-                //Arrange list articles in dateCreated order
-                articles.sort(function (a, b) {
-                    return (a.dateCreated < b.dateCreated) ? -1 : 1;
-                });
                 res.status(200).json({
                     success: true,
                     resultMessage: defaultSuccessMessage,
-                    articles: articles
+                    article: article
+                });
+            }
+        });
+};
+
+module.exports.getAllArticles = (req, res) => {
+    if (req.query.search == undefined || req.query.search == "") {
+        console.log("Action get all");
+        Article.find({}).skip((req.query.page - 1) * limitPage).limit(limitPage)
+            .populate('_author _category', 'username nickname avatar name').exec(function (err, articles) {
+            if (err)
+                errorCtrl.sendErrorMessage(res, 404,
+                    defaultErrorMessage, []);
+            else if (!articles)
+                errorCtrl.sendErrorMessage(res, 404,
+                    'Không có bài báo nào', []);
+            else {
+                Article.count().exec(function (err, count) {
+                    //Arrange list articles in dateCreated order
+                    articles.sort(function (a, b) {
+                        return (a.dateCreated < b.dateCreated) ? -1 : 1;
+                    });
+                    res.status(200).json({
+                        success: true,
+                        resultMessage: defaultSuccessMessage,
+                        articles: articles,
+                        pages: (count / limitPage) + 1
+                    });
                 });
             }
         });
     }
     else {
-        Article.find({tags: req.query.tag}).skip((req.query.page - 1) * limitPage).limit(limitPage)
-            .populate('_author _category', 'username nickname avatar name').exec(function (err, articles) {
-            if (err || !articles) {
-                errorCtrl.sendErrorMessage(res, 404,
-                    'Không có bài nào', []);
-            }
-            else {
-                //Arrange list articles in dateCreated order
-                articles.sort(function (a, b) {
-                    return (a.dateCreated < b.dateCreated) ? -1 : 1;
-                });
-                res.status(200).json({
-                    success: true,
-                    resultMessage: defaultSuccessMessage,
-                    articles: articles
-                });
-            }
-        });
+        console.log("Action search");
+        Article.find({$text: {$search: req.query.search}})
+            .populate('_author _category', 'username nickname avatar name')
+            .skip((req.query.page - 1) * limitPage).limit(limitPage)
+            .exec((err, articles) => {
+                if (err)
+                    errorCtrl.sendErrorMessage(res, 500,
+                        defaultErrorMessage,
+                        errorCtrl.getErrorMessage(err));
+
+                else if (!articles)
+                    errorCtrl.sendErrorMessage(res, 404,
+                        'Không có bài báo nào', []);
+
+                else {
+                    Article.count().exec(function (err, count) {
+                        //Arrange list articles in dateCreated order
+                        articles.sort(function (a, b) {
+                            return (a.dateCreated < b.dateCreated) ? -1 : 1;
+                        });
+                        res.status(200).json({
+                            success: true,
+                            resultMessage: defaultSuccessMessage,
+                            articles: articles,
+                            pages: (count / limitPage) + 1
+                        });
+                    });
+                }
+            });
     }
 };
 
@@ -183,7 +203,7 @@ module.exports.doWithArticle = (req, res, action) => {
                                 return;
                             }
                             else {
-                                Comment.findOne(comment._replyFor, (err, cmt) =>{
+                                Comment.findOne(comment._replyFor, (err, cmt) => {
                                     if (err) {
                                         errorCtrl.sendErrorMessage(res, 404,
                                             defaultErrorMessage,
@@ -251,10 +271,12 @@ module.exports.doWithArticle = (req, res, action) => {
 
 module.exports.getCountLike = (req, res) => {
     Article.findOne({_id: req.params.articleId}, function (err, article) {
-        if (err || !article) {
+        if (err)
             errorCtrl.sendErrorMessage(res, 404,
-                'Bài báo này không tồn tại', []);
-        }
+                defaultErrorMessage, []);
+        else if (!article)
+            errorCtrl.sendErrorMessage(res, 404,
+                'Bài post này không tồn tại', []);
         else {
             User.count({likedArticles: req.params.articleId}, function (err, count) {
                 if (err) {
@@ -279,19 +301,27 @@ module.exports.getAllComments = (req, res) => {
         _replyFor: undefined,
     }).skip((req.query.page - 1) * limitComment).limit(limitComment)
         .populate('_user', 'username nickname avatar name').exec(function (err, comments) {
-        if (err || !comments) {
+        if (err)
+            errorCtrl.sendErrorMessage(res, 404,
+                defaultErrorMessage, []);
+        else if (!comments)
             errorCtrl.sendErrorMessage(res, 404,
                 'Không có bình luận nào', []);
-        }
         else {
-            //Arrange list articles in dateCreated order
-            comments.sort(function (a, b) {
-                return (a.dateCreated < b.dateCreated) ? -1 : 1;
-            });
-            res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                comments: comments
+            Comment.count({
+                _article: req.params.articleId,
+                _replyFor: undefined
+            }).exec(function (err, count) {
+                //Arrange list articles in dateCreated order
+                comments.sort(function (a, b) {
+                    return (a.dateCreated < b.dateCreated) ? -1 : 1;
+                });
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage,
+                    comments: comments,
+                    pages: (count / limitPage) + 1
+                });
             });
         }
     });
@@ -303,19 +333,27 @@ module.exports.getAllReply = (req, res) => {
         _replyFor: req.params.commentId
     }).skip((req.query.page - 1) * limitComment).limit(limitComment)
         .populate('_user', 'username nickname avatar name').exec(function (err, comments) {
-        if (err || !comments) {
+        if (err)
+            errorCtrl.sendErrorMessage(res, 404,
+                defaultErrorMessage, []);
+        else if (!comments)
             errorCtrl.sendErrorMessage(res, 404,
                 'Không có bình luận nào', []);
-        }
         else {
-            //Arrange list articles in dateCreated order
-            comments.sort(function (a, b) {
-                return (a.dateCreated < b.dateCreated) ? -1 : 1;
-            });
-            res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                comments: comments
+            Comment.count({
+                _article: req.params.articleId,
+                _replyFor: req.params.commentId
+            }).exec(function (err, count) {
+                //Arrange list articles in dateCreated order
+                comments.sort(function (a, b) {
+                    return (a.dateCreated < b.dateCreated) ? -1 : 1;
+                });
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage,
+                    comments: comments,
+                    pages: (count / limitPage) + 1
+                });
             });
         }
     });
@@ -330,5 +368,6 @@ function isValidArticle(article) {
     delete article.readCount;
     delete article.shareCount;
     delete article.commentCount;
+    delete article.likeCount;
     return true;
 }

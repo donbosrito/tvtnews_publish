@@ -40,6 +40,11 @@ var articleSchema = new mongoose.Schema({
         default: 0
     },
 
+    likeCount: {
+        type: Number,
+        default: 0
+    },
+
     shareCount: {
         type: Number,
         default: 0
@@ -63,4 +68,5 @@ function getCurrentTime() {
     return parseInt(new Date().getTime() / 1000);
 }
 
+articleSchema.index({ tags: 'text', title: 'text' });
 mongoose.model('Article', articleSchema);
