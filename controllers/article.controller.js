@@ -6,9 +6,7 @@ let mongoose = require('mongoose'),
 
 let Article = mongoose.model('Article'),
     User = mongoose.model('User'),
-    Comment = mongoose.model('Comment'),
-    ObjectId = mongoose.Schema.ObjectId;
-
+    Comment = mongoose.model('Comment');
 
 // Define default response message
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
@@ -102,26 +100,23 @@ module.exports.getAllArticles = (req, res) => {
                         pages = count / limitPage;
                     else
                         pages = parseInt((count / limitPage) + 1);
-                    //Arrange list articles in dateCreated order
-                    articles.sort(function (a, b) {
-                        return (parseInt(a.dateCreated / 604800) < parseInt(b.dateCreated) / 604800) ? 1 : -1;
-                    });
+                    //Arrange list articles in dateCreated and read, comment, like order
                     if (req.query.action == "trending") {
                         console.log('trending action');
                         articles.sort(function (a, b) {
-                            return (a.likeCount < b.likeCount) ? 1 : -1;
+                            return sortTrendingArticle(a, b);
                         });
                     }
                     else if (req.query.action == "popular") {
                         console.log('popular action');
                         articles.sort(function (a, b) {
-                            return (a.readCount < b.readCount) ? 1 : -1;
+                            return sortPopularArticle(a, b);
                         });
                     }
                     else {
                         console.log('hot news action');
                         articles.sort(function (a, b) {
-                            return (a.commentCount < b.commentCount) ? 1 : -1;
+                            return sortHotNewsArticle(a, b);
                         });
                     }
                     res.status(200).json({
@@ -174,6 +169,51 @@ module.exports.getAllArticles = (req, res) => {
             });
     }
 };
+
+function sortPopularArticle(a, b) {
+
+    var o1 = parseInt(a.dateCreated / 604800);
+    var o2 = parseInt(b.dateCreated / 604800);
+
+    var p1 = a.commentCount;
+    var p2 = b.commentCount;
+
+    if (o1 < o2) return 1;
+    if (o1 > o2) return -1;
+    if (p1 < p2) return 1;
+    if (p1 > p2) return -1;
+    return 0;
+}
+
+function sortTrendingArticle(a, b) {
+
+    var o1 = parseInt(a.dateCreated / 604800);
+    var o2 = parseInt(b.dateCreated / 604800);
+
+    var p1 = a.likeCount;
+    var p2 = b.likeCount;
+
+    if (o1 < o2) return 1;
+    if (o1 > o2) return -1;
+    if (p1 < p2) return 1;
+    if (p1 > p2) return -1;
+    return 0;
+}
+
+function sortHotNewsArticle(a, b) {
+
+    var o1 = parseInt(a.dateCreated / 604800);
+    var o2 = parseInt(b.dateCreated / 604800);
+
+    var p1 = a.readCount;
+    var p2 = b.readCount;
+
+    if (o1 < o2) return 1;
+    if (o1 > o2) return -1;
+    if (p1 < p2) return 1;
+    if (p1 > p2) return -1;
+    return 0;
+}
 
 //action: read, comment, share.
 module.exports.doWithArticle = (req, res, action) => {
