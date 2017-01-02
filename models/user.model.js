@@ -32,9 +32,11 @@ let userSchema = new mongoose.Schema({
 
     likedArticles: [
         {
-            type: ObjectId,
-            ref: 'Article',
-            unique: true
+            _article: {
+                type: ObjectId,
+                ref: 'Article',
+                unique: true
+            }
         }
     ],
 
@@ -66,8 +68,8 @@ let userSchema = new mongoose.Schema({
     typeMember: {
         type: String,
         enum: ['ADMIN', 'AUTHOR', 'USER'],
-        required: [true, 'Role is required.'],
-        default: config.user.role.user
+        required: [true, 'typeMember is required.'],
+        default: config.user.typeMember.user
     },
 
     accessToken: String,

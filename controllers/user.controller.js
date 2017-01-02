@@ -6,12 +6,10 @@ let mongoose = require('mongoose'),
     errorHandler = require('./error.controller.js');
 
 let User = mongoose.model('User');
-let Article = mongoose.model('Article');
 
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     defaultSuccessMessage = 'Thực hiện thành công',
-    limitUser = 15,
-    limitArticle = 15;
+    limitUser = 15;
 
 // Check user info is valid or invalid
 function isValidUser(user) {
@@ -261,31 +259,14 @@ module.exports.likeArticle = (req, res) => {
         }
 
         // Like Article
-        Article.findOne({_id: articleId}, function (err, article) {
-            if (err || !article) {
-                errorCtrl.sendErrorMessage(res, 404,
-                    'Bài báo này không tồn tại', []);
-            }
-            else {
-                article.likeCount ++;
-                article.save(function (err, updatedArticle) {
-                    if (err) {
-                        errorCtrl.sendErrorMessage(res, 404,
-                            defaultErrorMessage,
-                            errorCtrl.getErrorMessage(err));
-                    } else {
-                        user.likedArticles.push(article);
-                        user.save((err) => {
-                            if (err) {
-                                errorHandler.sendSystemError(res, err);
-                            } else {
-                                res.status(200).json({
-                                    success: true,
-                                    resultMessage: defaultSuccessMessage
-                                });
-                            }
-                        });
-                    }
+        user.likedArticles.push(articleId);
+        user.save((err) => {
+            if (err) {
+                errorHandler.sendSystemError(res, err);
+            } else {
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage
                 });
             }
         });
@@ -321,66 +302,53 @@ module.exports.unlikeArticle = (req, res) => {
 
         // Unlike article
         for (let i = 0; i < user.likedArticles.length; i++) {
-            if (user.likedArticles[i] == articleId) {
-                Article.findOne({_id: articleId}, function (err, article) {
-                   if (err || !article) {
-                       errorCtrl.sendErrorMessage(res, 404,
-                           'Bài báo này không tồn tại', []);
-                   }
-                   else {
-                       article.likeCount --;
-                       article.save(function (err, updatedArticle) {
-                           if (err) {
-                               errorCtrl.sendErrorMessage(res, 404,
-                                   defaultErrorMessage,
-                                   errorCtrl.getErrorMessage(err));
-                           } else {
-                               user.likedArticles.splice(i, 1);
-                               user.save((err) => {
-                                   if (err) {
-                                       errorHandler.sendSystemError(res, err);
-                                   } else {
-                                       res.status(200).json({
-                                           success: true,
-                                           resultMessage: defaultSuccessMessage
-                                       });
-                                   }
-                               });
-                           }
-                       });
-                   }
-                });
+            if (user.likedArticles[i]._id == articleId) {
+                user.likedArticles.splice(i, 1);
                 break;
             }
         }
+
+        user.save((err) => {
+            if (err) {
+                errorHandler.sendSystemError(res, err);
+            } else {
+                res.status(200).json({
+                    success: true,
+                    resultMessage: defaultSuccessMessage
+                });
+            }
+        });
     });
 };
 
 module.exports.getLikedArticles = (req, res) => {
     let userId = req.params.userId;
+    let page = req.params.page;
 
-    User.findOne({_id: userId}).skip((req.query.page - 1) * limitArticle).limit(limitArticle)
-        .populate('likedArticles', 'title summary poster category likeCount readCount commentCount dateCreated').exec(function(err, user) {
-            if (err) {
-                errorHandler.sendSystemError(res, err);
-                return;
-            }
+    User.findOne({_id: userId}, (err, user) => {
+        if (err) {
+            errorHandler.sendSystemError(res, err);
+            return;
+        }
 
-            if (!user) {
-                errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
-                return;
-            }
-            res.status(200).json({
-                success: true,
-                resultMessage: defaultSuccessMessage,
-                likedArticles: user.likedArticles
+        if (!user) {
+            errorHandler.sendErrorMessage(res, 404, 'Người dùng không tồn tại', []);
+            return;
+        }
+
+        // Get promotion
+        let pinnedPromotions = [];
+        for (let i = 0; i < user.pinnedPromotion.length; i++) {
+            Promotion.findOne({_id: user.pinnedPromotion[i]._promotionId}, (err, promotion) => {
+                pinnedPromotions.push(promotion);
             });
-        });
+        }
+    });
 };
 
 function isLiked(articleId, listArticles) {
     for (let i = 0; i < listArticles.length; i++) {
-        if (listArticles[i] == articleId)
+        if (listArticles[i]._id == articleId)
             return true;
     }
     return false;

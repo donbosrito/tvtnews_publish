@@ -25,6 +25,11 @@ let commentSchema = new mongoose.Schema({
     message: {
         type: String,
         required: [true, 'Message have not body']
+    },
+
+    _replyFor: {
+        type: ObjectId,
+        ref: 'Comment',
     }
 });
 

@@ -41,6 +41,10 @@ module.exports.authenticate = (req, res, next) => {
                         errorHandler.getErrorMessage(err));
                 } else {
                     if (user && user._id == userId) {
+                        req.authenticatedUser = {
+                            userId: user._id,
+                            typeMember: user.typeMember
+                        };
                         next();
                     } else {
                         errorHandler.sendErrorMessage(res, 401,

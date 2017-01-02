@@ -15,7 +15,10 @@ let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     limitComment = 15;
 
 module.exports.postNewArticle = function (req, res) {
-    if (!isValidArticle(req.body)) {
+    if (req.authenticatedUser.typeMember != "AUTHOR" && req.authenticatedUser.typeMember != "ADMIN")
+        res.status(405).json({success: false, message: 'Chức năng này chỉ dùng cho nhà báo và quản trị!'});
+
+    else if (!isValidArticle(req.body)) {
         res.status(400).json({success: false, message: 'Vui lòng điền đầy đủ thông tin!'});
     }
     else {
@@ -30,10 +33,10 @@ module.exports.postNewArticle = function (req, res) {
                 else {
                     Article.create(req.body, function (err) {
                         if (err) {
-                            console.error(chalk.bgRed('Init article failed!'));
-                            console.log(err);
+                            errorCtrl.sendErrorMessage(res, 500,
+                                defaultErrorMessage,
+                                errorCtrl.getErrorMessage(err));
                         } else {
-                            console.info(chalk.blue('Init article successful!'));
                             user.articleCount++;
                             User.update({_id: req.body._author}, {
                                     $set: {
@@ -60,7 +63,9 @@ module.exports.postNewArticle = function (req, res) {
 };
 
 module.exports.getArticleInfo = (req, res) => {
-    Article.findOne({_id: req.params.articleId}, function (err, article) {
+    Article.findOne({_id: req.params.articleId})
+        .populate('_author _category', 'username nickname avatar name')
+        .exec(function (err, article){
         if (err || !article) {
             errorCtrl.sendErrorMessage(res, 404,
                 'Bài báo này không tồn tại', []);
@@ -121,10 +126,12 @@ module.exports.getAllArticles = (req, res) => {
 //action: read, comment, share.
 module.exports.doWithArticle = (req, res, action) => {
     Article.findOne({_id: req.params.articleId}, function (err, article) {
-        if (err || !article) {
+        if (err)
+            errorCtrl.sendErrorMessage(res, 404,
+                defaultErrorMessage, []);
+        else if (!article)
             errorCtrl.sendErrorMessage(res, 404,
                 'Bài post này không tồn tại', []);
-        }
         else {
             switch (action) {
                 case "read":
@@ -160,56 +167,105 @@ module.exports.doWithArticle = (req, res, action) => {
                     });
                     break;
                 case "comment":
-                    Comment.create(req.body, function (err) {
-                        if (err) {
-                            console.error(chalk.bgRed('Init comment failed!'));
-                            console.log(err);
-                        } else {
-                            console.info(chalk.blue('Init comment successful!'));
-                            article.commentCount++;
-                            article.save(function (err, updatedArticle) {
-                                if (err) {
-                                    errorCtrl.sendErrorMessage(res, 404,
-                                        defaultErrorMessage,
-                                        errorCtrl.getErrorMessage(err));
-                                } else {
-                                    res.status(200).json({
-                                        success: true,
-                                        resultMessage: defaultSuccessMessage,
-                                        commentCount: updatedArticle.commentCount
+                    req.body._user = req.headers._id;
+                    req.body._article = req.params.articleId;
+                    if (req.body._replyFor != null && req.body._replyFor != "") {
+                        Comment.find({_id: req.body._replyFor}, (err, comment) => {
+                            if (err) {
+                                errorCtrl.sendErrorMessage(res, 404,
+                                    defaultErrorMessage,
+                                    errorCtrl.getErrorMessage(err));
+                                return;
+                            }
+                            else if (!comment) {
+                                errorCtrl.sendErrorMessage(res, 404,
+                                    'Bình luận này không tồn tại', []);
+                                return;
+                            }
+                            else {
+                                Comment.findOne(comment._replyFor, (err, cmt) =>{
+                                    if (err) {
+                                        errorCtrl.sendErrorMessage(res, 404,
+                                            defaultErrorMessage,
+                                            errorCtrl.getErrorMessage(err));
+                                        return;
+                                    }
+                                    else if (cmt)
+                                        req.body._replyFor = cmt._id;
+
+                                    Comment.create(req.body, function (err) {
+                                        if (err) {
+                                            errorCtrl.sendErrorMessage(res, 404,
+                                                defaultErrorMessage,
+                                                errorCtrl.getErrorMessage(err));
+                                        } else {
+                                            article.commentCount++;
+                                            article.save(function (err) {
+                                                if (err) {
+                                                    errorCtrl.sendErrorMessage(res, 404,
+                                                        defaultErrorMessage,
+                                                        errorCtrl.getErrorMessage(err));
+                                                } else {
+                                                    res.status(200).json({
+                                                        success: true,
+                                                        resultMessage: defaultSuccessMessage,
+                                                        commentCount: article.commentCount
+                                                    });
+                                                }
+                                            });
+                                        }
                                     });
-                                }
-                            });
-                        }
-                    });
+                                });
+                            }
+                        });
+                    }
+                    else {
+                        Comment.create(req.body, function (err) {
+                            if (err) {
+                                errorCtrl.sendErrorMessage(res, 404,
+                                    defaultErrorMessage,
+                                    errorCtrl.getErrorMessage(err));
+                            } else {
+                                article.commentCount++;
+                                article.save(function (err) {
+                                    if (err) {
+                                        errorCtrl.sendErrorMessage(res, 404,
+                                            defaultErrorMessage,
+                                            errorCtrl.getErrorMessage(err));
+                                    } else {
+                                        res.status(200).json({
+                                            success: true,
+                                            resultMessage: defaultSuccessMessage,
+                                            commentCount: article.commentCount
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
                     break;
             }
         }
     })
 };
 
-module.exports.getAllComments =(req, res) => {
+module.exports.getCountLike = (req, res) => {
     Article.findOne({_id: req.params.articleId}, function (err, article) {
         if (err || !article) {
             errorCtrl.sendErrorMessage(res, 404,
                 'Bài báo này không tồn tại', []);
         }
         else {
-            Comment.find({_article: req.params.articleId}).skip((req.query.page - 1) * limitComment).limit(limitComment)
-                .populate('_user', 'username nickname avatar name').exec(function (err, comments) {
-                if (err || !comments) {
+            User.count({likedArticles: req.params.articleId}, function (err, count) {
+                if (err) {
                     errorCtrl.sendErrorMessage(res, 404,
-                        'Không có bình luận nào', []);
+                        'Có lỗi xảy ra, vui lòng thử lại', []);
                 }
                 else {
-                    //Arrange list articles in dateCreated order
-                    comments.sort(function (a, b) {
-                        return (a.dateCreated < b.dateCreated) ? -1 : 1;
-                    });
                     res.status(200).json({
                         success: true,
                         resultMessage: defaultSuccessMessage,
-                        comments: comments
+                        countLikes: count
                     });
                 }
             });
@@ -217,15 +273,62 @@ module.exports.getAllComments =(req, res) => {
     });
 };
 
+module.exports.getAllComments = (req, res) => {
+    Comment.find({
+        _article: req.params.articleId,
+        _replyFor: undefined,
+    }).skip((req.query.page - 1) * limitComment).limit(limitComment)
+        .populate('_user', 'username nickname avatar name').exec(function (err, comments) {
+        if (err || !comments) {
+            errorCtrl.sendErrorMessage(res, 404,
+                'Không có bình luận nào', []);
+        }
+        else {
+            //Arrange list articles in dateCreated order
+            comments.sort(function (a, b) {
+                return (a.dateCreated < b.dateCreated) ? -1 : 1;
+            });
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                comments: comments
+            });
+        }
+    });
+};
+
+module.exports.getAllReply = (req, res) => {
+    Comment.find({
+        _article: req.params.articleId,
+        _replyFor: req.params.commentId
+    }).skip((req.query.page - 1) * limitComment).limit(limitComment)
+        .populate('_user', 'username nickname avatar name').exec(function (err, comments) {
+        if (err || !comments) {
+            errorCtrl.sendErrorMessage(res, 404,
+                'Không có bình luận nào', []);
+        }
+        else {
+            //Arrange list articles in dateCreated order
+            comments.sort(function (a, b) {
+                return (a.dateCreated < b.dateCreated) ? -1 : 1;
+            });
+            res.status(200).json({
+                success: true,
+                resultMessage: defaultSuccessMessage,
+                comments: comments
+            });
+        }
+    });
+};
+
 function isValidArticle(article) {
     if (article._author == "" || article._author == null
-    || article._category == "" || article._category == null
-    || article.title == "" || article.title == null
-    || article.body == "" || article.body == null)
+        || article._category == "" || article._category == null
+        || article.title == "" || article.title == null
+        || article.body == "" || article.body == null)
         return false;
     delete article.readCount;
     delete article.shareCount;
     delete article.commentCount;
-    delete article.likeCount;
     return true;
 }

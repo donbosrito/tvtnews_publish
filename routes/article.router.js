@@ -38,6 +38,10 @@ router
         articleController.getAllComments(req, res);
     })
 
+    .get('/:articleId/comments/:commentId', (req, res) => {
+        articleController.getAllReply(req, res);
+    })
+
     .get('/:articleId/count-likes', (req, res) => {
         articleController.getCountLike(req, res);
     });

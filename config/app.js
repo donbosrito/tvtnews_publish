@@ -6,7 +6,7 @@ module.exports = {
         },
         defaultAvatarURL: 'http://tinyurl.com/hjcj8ws',
         defaultPassword: '123456',
-        role: {
+        typeMember: {
             admin: 'ADMIN',
             author: 'AUTHOR',
             user: 'USER'

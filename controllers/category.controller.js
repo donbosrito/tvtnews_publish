@@ -14,7 +14,10 @@ let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     limitPage = 10;
 
 module.exports.postNewCategory = (req, res) => {
-    if (!req.body.name || req.body.name == "") {
+    if (req.authenticatedUser.typeMember != "ADMIN")
+        res.status(405).json({success: false, message: 'Chức năng này chỉ dùng cho quản trị!'});
+
+    else if (!req.body.name || req.body.name == "") {
         res.status(400).json({success: false, message: 'Vui lòng điền đầy đủ thông tin!'});
     }
     else {
