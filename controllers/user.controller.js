@@ -5,7 +5,8 @@ let mongoose = require('mongoose'),
     authController = require('./authorization.controller.js'),
     errorHandler = require('./error.controller.js');
 
-let User = mongoose.model('User');
+let User = mongoose.model('User'),
+    Article = mongoose.model('Article');
 
 let defaultErrorMessage = 'Có lỗi xảy ra. Vui lòng thử lại!',
     defaultSuccessMessage = 'Thực hiện thành công',
@@ -299,6 +300,42 @@ module.exports.likeArticle = (req, res) => {
             }
         });
     });
+};
+
+module.exports.getAllArticleByUser = (req, res) => {
+    if (req.authenticatedUser.typeMember != "ADMIN" && req.authenticatedUser.typeMember != "AUTHOR")
+        res.status(405).json({success: false, message: 'Chức năng này chỉ dùng cho quản trị hoặc nhà báo!'});
+    else {
+        Article.find({_author: req.params.userId})
+            .skip((req.query.page - 1) * limitArticle).limit(limitArticle)
+            .populate('_category', 'name').exec(function (err, articles) {
+            if (err)
+                errorCtrl.sendErrorMessage(res, 500,
+                    defaultErrorMessage, []);
+            else if (!articles)
+                errorCtrl.sendErrorMessage(res, 404,
+                    'Không có bài báo nào', []);
+            else {
+                Article.count({_author: req.params.userId}).exec(function (err, count) {
+                    let pages;
+                    if (count % limitArticle == 0)
+                        pages = count / limitArticle;
+                    else
+                        pages = parseInt((count / limitArticle) + 1);
+                    //Arrange list articles in dateCreated order
+                    articles.sort(function (a, b) {
+                        return (a.dateCreated < b.dateCreated) ? 1 : -1;
+                    });
+                    res.status(200).json({
+                        success: true,
+                        resultMessage: defaultSuccessMessage,
+                        articles: articles,
+                        pages: pages
+                    });
+                });
+            }
+        });
+    }
 };
 
 module.exports.unlikeArticle = (req, res) => {

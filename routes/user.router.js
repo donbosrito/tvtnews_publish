@@ -31,6 +31,12 @@ router
         userController.getUserInfo(req, res);
     })
 
+    .get('/:userId/articles', (req, res, next) => {
+        authController.authenticate(req, res, next);
+    }, (req, res) => {
+        userController.getAllArticleByUser(req, res);
+    })
+
     // Sign in account
     .post('/sign-in', (req, res) => {
         userController.signIn(req, res);
