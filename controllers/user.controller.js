@@ -308,7 +308,7 @@ module.exports.getAllArticleByUser = (req, res) => {
     else {
         Article.find({_author: req.params.userId})
             .skip((req.query.page - 1) * limitArticle).limit(limitArticle)
-            .populate('_category', 'name').exec(function (err, articles) {
+            .populate('_category _author', 'name username nickname avatar').exec(function (err, articles) {
             if (err)
                 errorCtrl.sendErrorMessage(res, 500,
                     defaultErrorMessage, []);
