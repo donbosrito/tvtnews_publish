@@ -73,10 +73,17 @@ module.exports.getArticleInfo = (req, res) => {
                 errorCtrl.sendErrorMessage(res, 404,
                     'Bài post này không tồn tại', []);
             else {
-                res.status(200).json({
-                    success: true,
-                    resultMessage: defaultSuccessMessage,
-                    article: article
+                article.readCount ++;
+                article.save((err) => {
+                    if (err) {
+                        errorHandler.sendSystemError(res, err);
+                    } else {
+                        res.status(200).json({
+                            success: true,
+                            resultMessage: defaultSuccessMessage,
+                            article: article
+                        });
+                    }
                 });
             }
         });

@@ -284,6 +284,8 @@ module.exports.likeArticle = (req, res) => {
                             defaultErrorMessage,
                             errorCtrl.getErrorMessage(err));
                     } else {
+                        //Delete password to avoid hash password again
+                        delete(user.password);
                         user.likedArticles.push(article);
                         user.save((err) => {
                             if (err) {
@@ -378,6 +380,8 @@ module.exports.unlikeArticle = (req, res) => {
                                     errorCtrl.getErrorMessage(err));
                             } else {
                                 user.likedArticles.splice(i, 1);
+                                //Delete password to avoid hash password again
+                                delete(user.password);
                                 user.save((err) => {
                                     if (err) {
                                         errorHandler.sendSystemError(res, err);
